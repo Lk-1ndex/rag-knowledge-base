@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { useAuth } from "./hooks/useAuth";
@@ -14,14 +15,19 @@ function ProtectedShell() {
   const { isLoading, isError } = useAuth();
 
   if (isLoading) {
-    return <div className="flex min-h-screen items-center justify-center text-slate-400">加载中...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center gap-2 text-muted-foreground">
+        <Loader2 className="animate-spin" size={18} />
+        加载中...
+      </div>
+    );
   }
   if (isError) {
     return <Navigate to="/login" replace />;
   }
 
   return (
-    <div className="flex h-screen bg-bg">
+    <div className="flex h-screen bg-background">
       <Sidebar user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header user={user} />

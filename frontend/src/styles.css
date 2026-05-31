@@ -2,29 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: #0f1117;
-  color: #eef2ff;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.6rem;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    margin: 0;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
 }
 
-* {
-  box-sizing: border-box;
-}
-
-.input {
-  @apply rounded-md border border-line bg-bg px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand;
-}
-
-.button {
-  @apply inline-flex items-center justify-center rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60;
-}
-
-.ghost-button {
-  @apply inline-flex items-center justify-center rounded-md border border-line px-3 py-2 text-sm text-slate-200 hover:bg-slate-800;
-}
-
-.panel {
-  @apply rounded-lg border border-line bg-panel;
+@layer components {
+  /* Markdown 渲染样式：用于问答回答区 */
+  .markdown {
+    @apply text-sm leading-7 text-foreground;
+  }
+  .markdown > *:first-child {
+    @apply mt-0;
+  }
+  .markdown > *:last-child {
+    @apply mb-0;
+  }
+  .markdown h1 {
+    @apply mb-3 mt-5 text-xl font-semibold;
+  }
+  .markdown h2 {
+    @apply mb-2 mt-5 text-lg font-semibold;
+  }
+  .markdown h3 {
+    @apply mb-2 mt-4 text-base font-semibold;
+  }
+  .markdown p {
+    @apply my-3;
+  }
+  .markdown ul {
+    @apply my-3 list-disc space-y-1 pl-6;
+  }
+  .markdown ol {
+    @apply my-3 list-decimal space-y-1 pl-6;
+  }
+  .markdown li {
+    @apply leading-7;
+  }
+  .markdown a {
+    @apply font-medium text-primary underline underline-offset-2 hover:opacity-80;
+  }
+  .markdown blockquote {
+    @apply my-3 border-l-4 border-border pl-4 text-muted-foreground;
+  }
+  .markdown code:not(pre code) {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-foreground;
+  }
+  .markdown pre {
+    @apply my-3 overflow-x-auto rounded-lg border border-border bg-[#f6f8fa] p-4 text-[0.85em] leading-6;
+  }
+  .markdown pre code {
+    @apply bg-transparent p-0 font-mono;
+  }
+  .markdown table {
+    @apply my-3 w-full border-collapse overflow-hidden text-sm;
+  }
+  .markdown th,
+  .markdown td {
+    @apply border border-border px-3 py-1.5 text-left;
+  }
+  .markdown th {
+    @apply bg-muted font-medium;
+  }
+  .markdown hr {
+    @apply my-5 border-border;
+  }
 }
