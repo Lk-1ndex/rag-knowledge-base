@@ -9,6 +9,7 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.2.1
 python-jose[cryptography]==3.3.0
 redis==5.2.1
+arq==0.26.3
 qdrant-client==1.12.1
 openai==1.58.1
 PyMuPDF==1.25.1

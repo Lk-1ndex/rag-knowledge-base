@@ -31,7 +31,7 @@ async def login(payload: LoginRequest, request: Request, response: Response, db:
         value=token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.cookie_secure,
         max_age=settings.jwt_expire_days * 24 * 3600,
     )
     await write_audit_log(db, user, "login", "用户登录", request)

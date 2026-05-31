@@ -6,15 +6,23 @@ from config import settings
 
 
 class Embedder:
-    """DeepSeek 兼容 OpenAI Embedding API 的轻量封装。"""
+    """本地 Infinity（BGE-M3）Embedding 服务的轻量封装。
+
+    Infinity 暴露 OpenAI 兼容的 /v1/embeddings 接口，因此复用 AsyncOpenAI，
+    但 base_url 指向本地 embedding 服务，而非 LLM provider。
+    """
 
     def __init__(self) -> None:
-        self.client = AsyncOpenAI(api_key=settings.provider_api_key, base_url=settings.provider_base_url)
+        self.client = AsyncOpenAI(
+            api_key=settings.embedding_api_key,
+            base_url=settings.embedding_base_url,
+        )
+        self.batch_size = settings.embedding_batch_size
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         vectors: list[list[float]] = []
-        for start in range(0, len(texts), 100):
-            batch = texts[start : start + 100]
+        for start in range(0, len(texts), self.batch_size):
+            batch = texts[start : start + self.batch_size]
             vectors.extend(await self._embed_batch(batch))
         return vectors
 
@@ -30,7 +38,7 @@ class Embedder:
                     input=batch,
                 )
                 return [item.embedding for item in response.data]
-            except Exception as exc:  # pragma: no cover - 外部 API 错误由集成环境验证
+            except Exception as exc:  # pragma: no cover - 外部服务错误由集成环境验证
                 last_error = exc
                 await asyncio.sleep(0.5 * (attempt + 1))
-        raise RuntimeError(f"Embedding API 调用失败: {last_error}")
+        raise RuntimeError(f"Embedding 服务调用失败: {last_error}")

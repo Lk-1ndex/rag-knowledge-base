@@ -3,27 +3,25 @@ import uuid
 from pathlib import Path
 
 import aiofiles
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from database import AsyncSessionLocal, get_db
+from database import get_db
 from middleware.auth_middleware import get_current_user
 from models.document import Document
 from models.user import User
 from schemas.document import DocumentListResponse, DocumentOut, DocumentUploadResponse
 from services.audit import write_audit_log
 from services.document_processor import (
-    chunk_pages,
-    extract_text_pages,
     file_type_from_name,
     parse_tags,
     secure_filename,
     validate_magic_bytes,
 )
-from services.embedder import Embedder
 from services.vector_store import VectorStore
+from worker.queue import enqueue_document
 
 router = APIRouter(prefix="/api/documents", tags=["文档"])
 
@@ -72,7 +70,6 @@ async def list_documents(
 
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
-    background_tasks: BackgroundTasks,
     request: Request,
     file: UploadFile = File(...),
     title: str | None = Form(default=None),
@@ -114,7 +111,12 @@ async def upload_document(
     )
     db.add(doc)
     await db.commit()
-    background_tasks.add_task(process_document_task, document_id)
+    queued = await enqueue_document(document_id)
+    if not queued:
+        # arq/Redis 不可用时降级为进程内处理（本地开发场景）
+        from worker.tasks import process_document
+        import asyncio
+        asyncio.get_event_loop().create_task(process_document({}, document_id))
     await write_audit_log(db, user, "document.upload", document_id, request)
     return DocumentUploadResponse(document_id=document_id, status="processing")
 
@@ -146,20 +148,3 @@ async def delete_document(
     return {"detail": "已删除"}
 
 
-async def process_document_task(document_id: str) -> None:
-    async with AsyncSessionLocal() as db:
-        doc = await db.get(Document, document_id)
-        if doc is None:
-            return
-        try:
-            pages = extract_text_pages(Path(doc.stored_path), doc.file_type)
-            chunks = chunk_pages(pages)
-            vectors = await Embedder().embed_texts([chunk.text for chunk in chunks])
-            await VectorStore().upsert_chunks(doc.id, doc.title, doc.category, chunks, vectors)
-            doc.chunk_count = len(chunks)
-            doc.status = "ready"
-            doc.error_message = ""
-        except Exception as exc:
-            doc.status = "error"
-            doc.error_message = str(exc)
-        await db.commit()

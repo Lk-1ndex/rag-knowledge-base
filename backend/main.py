@@ -23,9 +23,21 @@ async def lifespan(app: FastAPI):
     try:
         await VectorStore().ensure_collection()
     except Exception:
-        # Qdrant 在本地开发时可能尚未启动，/health 会暴露真实状态。
+        pass
+    # 初始化 arq 任务队列连接池
+    from worker.queue import init_pool, close_pool
+    await init_pool()
+    # 恢复残留在 processing 的文档（容器重启后可能有）
+    from worker.tasks import recover_stale_documents
+    try:
+        recovered = await recover_stale_documents()
+        if recovered:
+            import logging
+            logging.getLogger(__name__).info("恢复了 %d 个残留 processing 文档", recovered)
+    except Exception:
         pass
     yield
+    await close_pool()
 
 
 app = FastAPI(title=settings.app_title, lifespan=lifespan)

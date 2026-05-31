@@ -105,10 +105,13 @@ class RagChain:
         return messages
 
     def _thinking_body(self) -> dict | None:
-        if settings.deepseek_thinking_mode == "think-high":
-            return {"thinking": {"type": "enabled", "budget_tokens": 8000}}
-        if settings.deepseek_thinking_mode == "think-max":
-            return {"thinking": {"type": "enabled", "budget_tokens": 32000}}
+        # DeepSeek 官方：thinking={"type":"enabled"} 开启，reasoning_effort 调深度。
+        # 用 OpenAI 网关时由 responses 分支处理，这里只负责 DeepSeek chat_completions。
+        if settings.deepseek_thinking_mode == "on":
+            return {
+                "thinking": {"type": "enabled"},
+                "reasoning_effort": settings.deepseek_reasoning_effort,
+            }
         return None
 
     def _chat_kwargs(self, messages: list[dict], stream: bool = False) -> dict:
