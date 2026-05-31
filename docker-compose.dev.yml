@@ -27,7 +27,3 @@ services:
   redis:
     ports:
       - "6379:6379"
-
-  embedding:
-    ports:
-      - "7997:7997"

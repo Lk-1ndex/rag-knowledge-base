@@ -6,10 +6,11 @@ from config import settings
 
 
 class Embedder:
-    """本地 Infinity（BGE-M3）Embedding 服务的轻量封装。
+    """Embedding 服务的轻量封装（默认硅基流动托管的 BGE-M3，免费）。
 
-    Infinity 暴露 OpenAI 兼容的 /v1/embeddings 接口，因此复用 AsyncOpenAI，
-    但 base_url 指向本地 embedding 服务，而非 LLM provider。
+    目标服务暴露 OpenAI 兼容的 /v1/embeddings 接口，因此复用 AsyncOpenAI，
+    但 base_url / api_key 独立配置，指向 embedding 服务而非 LLM provider。
+    切换为本地 Infinity 或其他 OpenAI 兼容 embedding 网关时，只需改 .env。
     """
 
     def __init__(self) -> None:

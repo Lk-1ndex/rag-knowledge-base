@@ -13,8 +13,9 @@ class Settings(BaseSettings):
 
     设计要点：
     - LLM 默认走 DeepSeek 官方；保留 OPENAI_* 作为可选网关（设置后优先）。
-    - Embedding 完全独立，指向本地 Infinity（BGE-M3），与 LLM 不共用 base_url。
-      原因：DeepSeek 官方不提供 embedding 接口，向量化由本地模型负责。
+    - Embedding 完全独立，走硅基流动托管的 BGE-M3（免费，OpenAI 兼容），与 LLM 不共用 base_url。
+      原因：DeepSeek 官方不提供 embedding 接口，向量化交由专门的 embedding 服务负责；
+      用托管 API 而非本地模型，云端部署无需 GPU。
     """
 
     model_config = SettingsConfigDict(
@@ -40,14 +41,13 @@ class Settings(BaseSettings):
     openai_reasoning_effort: str = Field("", alias="OPENAI_REASONING_EFFORT")
     openai_disable_response_storage: bool = Field(True, alias="OPENAI_DISABLE_RESPONSE_STORAGE")
 
-    # ===== Embedding：本地 Infinity（BGE-M3），与 LLM 独立 =====
-    embedding_base_url: str = Field("http://embedding:7997/v1", alias="EMBEDDING_BASE_URL")
-    # Infinity 不校验 key，占位即可
-    embedding_api_key: str = Field("not-needed", alias="EMBEDDING_API_KEY")
+    # ===== Embedding：硅基流动托管 BGE-M3（免费，OpenAI 兼容），与 LLM 独立 =====
+    embedding_base_url: str = Field("https://api.siliconflow.cn/v1", alias="EMBEDDING_BASE_URL")
+    embedding_api_key: str = Field("", alias="EMBEDDING_API_KEY")
     embedding_model: str = Field("BAAI/bge-m3", alias="EMBEDDING_MODEL")
     # BGE-M3 输出 1024 维；换模型时必须同步修改，并与 Qdrant collection 维度一致
     embedding_dim: int = Field(1024, alias="EMBEDDING_DIM")
-    embedding_batch_size: int = Field(64, alias="EMBEDDING_BATCH_SIZE")
+    embedding_batch_size: int = Field(32, alias="EMBEDDING_BATCH_SIZE")
 
     secret_key: str = Field("dev-only-change-me", alias="SECRET_KEY")
     jwt_expire_days: int = Field(7, alias="JWT_EXPIRE_DAYS")
