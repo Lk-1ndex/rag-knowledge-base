@@ -101,3 +101,17 @@ export async function login(username: string, password: string): Promise<User> {
 export async function logout(): Promise<void> {
   await api.post("/api/auth/logout");
 }
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  const { data } = await api.get<ConversationSummary[]>("/api/conversations");
+  return data;
+}
+
+export async function getConversation(id: string): Promise<ConversationDetail> {
+  const { data } = await api.get<ConversationDetail>(`/api/conversations/${id}`);
+  return data;
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await api.delete(`/api/conversations/${id}`);
+}

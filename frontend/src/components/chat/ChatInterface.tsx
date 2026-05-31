@@ -1,10 +1,12 @@
 import { Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { streamQuery } from "../../hooks/useSSE";
-import type { Source } from "../../lib/api";
+import { deleteConversation, getConversation, listConversations, type Source } from "../../lib/api";
 import { cn, uid } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { ConversationSidebar } from "./ConversationSidebar";
 import { MessageBubble } from "./MessageBubble";
 
 interface LocalMessage {
@@ -13,6 +15,10 @@ interface LocalMessage {
   content: string;
   sources?: Source[];
 }
+
+// 仅持久化“当前激活的对话 ID”。消息本体由后端保存，切换页面 / 刷新后据此重新拉取，
+// 既能恢复聊天记录，又能避免本地缓存与后端不一致。
+const ACTIVE_KEY = "rag.chat.activeId";
 
 const categories = ["精读文献", "组内发表论文", "组会笔记", "技术文档", "其他"];
 
@@ -24,6 +30,7 @@ const examples = [
 ];
 
 export function ChatInterface() {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -32,9 +39,64 @@ export function ChatInterface() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const { data: conversations = [], isLoading: listLoading } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: listConversations
+  });
+
+  // 挂载时若存在持久化的会话 ID，则从后端加载其消息，使切换页面 / 刷新后记录仍在。
+  useEffect(() => {
+    const activeId = localStorage.getItem(ACTIVE_KEY);
+    if (activeId) void loadConversation(activeId);
+    // 只在挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  function persistActiveId(id: string | null) {
+    try {
+      if (id) localStorage.setItem(ACTIVE_KEY, id);
+      else localStorage.removeItem(ACTIVE_KEY);
+    } catch {
+      /* 存储不可用时忽略 */
+    }
+  }
+
+  async function loadConversation(id: string) {
+    try {
+      const detail = await getConversation(id);
+      setConversationId(id);
+      persistActiveId(id);
+      setMessages(
+        detail.messages.map((message) => ({
+          id: String(message.id),
+          role: message.role,
+          content: message.content,
+          sources: message.sources
+        }))
+      );
+    } catch {
+      // 对话可能已被删除，退回空会话
+      newConversation();
+    }
+  }
+
+  function newConversation() {
+    setMessages([]);
+    setConversationId(null);
+    persistActiveId(null);
+    setQuestion("");
+  }
+
+  async function removeConversation(id: string) {
+    if (!confirm("确认删除这个对话？")) return;
+    await deleteConversation(id);
+    await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    if (id === conversationId) newConversation();
+  }
 
   function toggleCategory(category: string) {
     setSelected((current) =>
@@ -61,10 +123,15 @@ export function ChatInterface() {
           onSources: (sources) =>
             setMessages((current) => current.map((item) => (item.id === assistantId ? { ...item, sources } : item))),
           onDone: (_usage, nextConversationId) => {
-            if (nextConversationId) setConversationId(nextConversationId);
+            if (nextConversationId) {
+              setConversationId(nextConversationId);
+              persistActiveId(nextConversationId);
+            }
           }
         }
       );
+      // 刷新侧边栏：新对话出现，或已有对话的标题/时间更新
+      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
     } catch (error) {
       setMessages((current) =>
         current.map((item) => (item.id === assistantId ? { ...item, content: `请求失败：${String(error)}` } : item))
@@ -75,95 +142,111 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-muted/20">
-      {/* 分类过滤 + top_k */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-6 py-3">
-        {categories.map((category) => {
-          const active = selected.includes(category);
-          return (
-            <button
-              key={category}
-              onClick={() => toggleCategory(category)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                active
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              {category}
-            </button>
-          );
-        })}
-        <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          top_k
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={topK}
-            onChange={(event) => setTopK(Number(event.target.value))}
-            className="accent-primary"
-          />
-          <span className="w-4 font-mono font-medium text-foreground">{topK}</span>
-        </label>
-      </div>
+    <div className="flex h-full">
+      <ConversationSidebar
+        conversations={conversations}
+        activeId={conversationId}
+        loading={listLoading}
+        onSelect={(id) => void loadConversation(id)}
+        onNew={newConversation}
+        onDelete={(id) => void removeConversation(id)}
+      />
 
-      {/* 消息区 */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-        {messages.length === 0 ? (
-          <div className="mx-auto mt-16 max-w-xl text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Sparkles size={26} />
+      <div className="flex min-w-0 flex-1 flex-col bg-muted/20">
+        {/* 分类过滤 + top_k */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-6 py-3">
+          {categories.map((category) => {
+            const active = selected.includes(category);
+            return (
+              <button
+                key={category}
+                onClick={() => toggleCategory(category)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                {category}
+              </button>
+            );
+          })}
+          <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            top_k
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={topK}
+              onChange={(event) => setTopK(Number(event.target.value))}
+              className="accent-primary"
+            />
+            <span className="w-4 font-mono font-medium text-foreground">{topK}</span>
+          </label>
+        </div>
+
+        {/* 消息区 */}
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          {messages.length === 0 ? (
+            <div className="mx-auto mt-16 max-w-xl text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Sparkles size={26} />
+              </div>
+              <h2 className="text-lg font-semibold">向知识库提问</h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                系统会基于已上传文档检索相关内容，并由 DeepSeek 生成带引用的回答。
+              </p>
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                {examples.map((example) => (
+                  <button
+                    key={example}
+                    onClick={() => void send(example)}
+                    className="rounded-lg border border-border bg-card p-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
             </div>
-            <h2 className="text-lg font-semibold">向知识库提问</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              系统会基于已上传文档检索相关内容，并由 DeepSeek 生成带引用的回答。
-            </p>
-            <div className="mt-6 grid gap-2 sm:grid-cols-2">
-              {examples.map((example) => (
-                <button
-                  key={example}
-                  onClick={() => void send(example)}
-                  className="rounded-lg border border-border bg-card p-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                >
-                  {example}
-                </button>
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-6">
+              {messages.map((message, i) => (
+                <MessageBubble
+                  key={message.id}
+                  {...message}
+                  loading={loading && i === messages.length - 1 && message.role === "assistant"}
+                />
               ))}
             </div>
-          </div>
-        ) : (
-          <div className="mx-auto max-w-3xl space-y-6">
-            {messages.map((message, i) => (
-              <MessageBubble
-                key={message.id}
-                {...message}
-                loading={loading && i === messages.length - 1 && message.role === "assistant"}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* 输入区 */}
-      <div className="border-t border-border bg-card px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-end gap-2">
-          <Textarea
-            className="max-h-40 min-h-[44px] flex-1 resize-none"
-            rows={1}
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void send();
-              }
-            }}
-            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
-          />
-          <Button size="icon" className="h-11 w-11 shrink-0" onClick={() => void send()} disabled={loading || !question.trim()}>
-            <Send size={18} />
-          </Button>
+        {/* 输入区 */}
+        <div className="border-t border-border bg-card px-6 py-4">
+          <div className="mx-auto flex max-w-3xl items-end gap-2">
+            <Textarea
+              className="max-h-40 min-h-[44px] flex-1 resize-none"
+              rows={1}
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void send();
+                }
+              }}
+              placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+            />
+            <Button
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              onClick={() => void send()}
+              disabled={loading || !question.trim()}
+            >
+              <Send size={18} />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
