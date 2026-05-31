@@ -2,7 +2,7 @@ import { Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { streamQuery } from "../../hooks/useSSE";
 import type { Source } from "../../lib/api";
-import { cn } from "../../lib/utils";
+import { cn, uid } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { MessageBubble } from "./MessageBubble";
@@ -45,8 +45,8 @@ export function ChatInterface() {
   async function send(preset?: string) {
     const trimmed = (preset ?? question).trim();
     if (!trimmed || loading) return;
-    const userMessage: LocalMessage = { id: crypto.randomUUID(), role: "user", content: trimmed };
-    const assistantId = crypto.randomUUID();
+    const userMessage: LocalMessage = { id: uid(), role: "user", content: trimmed };
+    const assistantId = uid();
     setMessages((current) => [...current, userMessage, { id: assistantId, role: "assistant", content: "" }]);
     setQuestion("");
     setLoading(true);
