@@ -5,12 +5,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
+# 依赖均提供预编译 wheel，无需 build-essential；健康检查改用镜像自带 python，
+# 因此不再 apt 安装任何东西，避免国内访问 Debian 源极慢。pip 走清华源加速。
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
 COPY . .
 
