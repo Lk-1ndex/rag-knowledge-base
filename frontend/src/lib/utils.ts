@@ -7,7 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatTime(value: string | null) {
   if (!value) return "从未";
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  // 后端返回的是不带时区标记的 UTC 时间（datetime.utcnow().isoformat()）。
+  // 若字符串没有时区信息（结尾的 Z 或 +08:00 之类偏移），浏览器会按本地时间解析，
+  // 导致显示比真实时间差 8 小时。这里补上 Z 让其按 UTC 解析后自动换算到本地时区。
+  const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value);
+  const normalized = value.includes("T") && !hasTimezone ? `${value}Z` : value;
+  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(normalized));
 }
 
 export function formatFileSize(bytes: number) {
