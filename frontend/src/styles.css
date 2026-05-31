@@ -4,38 +4,39 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* 暖米白纸张底 + 墨色正文 + 学术深蓝主色 */
+    --background: 40 33% 97%;
+    --foreground: 24 12% 17%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 42 50% 99%;
+    --card-foreground: 24 12% 17%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 215 46% 28%;
+    --primary-foreground: 40 33% 97%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 40 22% 93%;
+    --secondary-foreground: 24 12% 22%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 38 24% 93%;
+    --muted-foreground: 28 9% 43%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 38 30% 91%;
+    --accent-foreground: 24 12% 17%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 4 64% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 146 46% 34%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 33 78% 44%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 36 24% 86%;
+    --input: 36 24% 86%;
+    --ring: 215 46% 28%;
 
-    --radius: 0.6rem;
+    --radius: 0.5rem;
   }
 
   * {
@@ -49,10 +50,22 @@
     height: 100%;
   }
 
+  /* 整体放大根字号：学术字体 + 中文回退在同字号下偏小，按比例放大更舒适 */
+  html {
+    font-size: 18px;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     margin: 0;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* 标题统一用衬线体，呈现学术/编辑气质 */
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+    letter-spacing: -0.01em;
   }
 
   ::-webkit-scrollbar {
@@ -68,12 +81,23 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
+
+  /* 尊重系统的减弱动态偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
-  /* Markdown 渲染样式：用于问答回答区 */
+  /* Markdown 渲染样式：用于问答回答区，偏论文阅读体验 */
   .markdown {
-    @apply text-sm leading-7 text-foreground;
+    @apply text-[0.95rem] leading-[1.8] text-foreground;
   }
   .markdown > *:first-child {
     @apply mt-0;
@@ -82,52 +106,58 @@
     @apply mb-0;
   }
   .markdown h1 {
-    @apply mb-3 mt-5 text-xl font-semibold;
+    @apply mb-3 mt-6 font-serif text-2xl font-semibold;
   }
   .markdown h2 {
-    @apply mb-2 mt-5 text-lg font-semibold;
+    @apply mb-2.5 mt-6 font-serif text-xl font-semibold;
   }
   .markdown h3 {
-    @apply mb-2 mt-4 text-base font-semibold;
+    @apply mb-2 mt-5 font-serif text-lg font-semibold;
   }
   .markdown p {
-    @apply my-3;
+    @apply my-3.5;
   }
   .markdown ul {
-    @apply my-3 list-disc space-y-1 pl-6;
+    @apply my-3.5 list-disc space-y-1.5 pl-6 marker:text-muted-foreground;
   }
   .markdown ol {
-    @apply my-3 list-decimal space-y-1 pl-6;
+    @apply my-3.5 list-decimal space-y-1.5 pl-6 marker:text-muted-foreground;
   }
   .markdown li {
-    @apply leading-7;
+    @apply leading-[1.8];
   }
   .markdown a {
-    @apply font-medium text-primary underline underline-offset-2 hover:opacity-80;
+    @apply font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary;
   }
   .markdown blockquote {
-    @apply my-3 border-l-4 border-border pl-4 text-muted-foreground;
+    @apply my-4 border-l-2 border-primary/40 bg-muted/40 py-1 pl-4 italic text-muted-foreground;
   }
   .markdown code:not(pre code) {
-    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-foreground;
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.83em] text-foreground;
   }
   .markdown pre {
-    @apply my-3 overflow-x-auto rounded-lg border border-border bg-[#f6f8fa] p-4 text-[0.85em] leading-6;
+    @apply my-4 overflow-x-auto rounded-lg border border-border bg-[#fbfaf6] p-4 text-[0.83em] leading-relaxed shadow-sm;
   }
   .markdown pre code {
     @apply bg-transparent p-0 font-mono;
   }
   .markdown table {
-    @apply my-3 w-full border-collapse overflow-hidden text-sm;
+    @apply my-4 w-full border-collapse overflow-hidden rounded-lg text-sm;
   }
   .markdown th,
   .markdown td {
-    @apply border border-border px-3 py-1.5 text-left;
+    @apply border border-border px-3 py-2 text-left;
   }
   .markdown th {
-    @apply bg-muted font-medium;
+    @apply bg-muted font-semibold;
+  }
+  .markdown tbody tr:nth-child(even) {
+    @apply bg-muted/30;
   }
   .markdown hr {
-    @apply my-5 border-border;
+    @apply my-6 border-border;
+  }
+  .markdown strong {
+    @apply font-bold text-foreground;
   }
 }

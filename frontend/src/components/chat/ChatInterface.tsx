@@ -1,4 +1,4 @@
-import { Send, Sparkles } from "lucide-react";
+import { BookOpen, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { streamQuery } from "../../hooks/useSSE";
@@ -191,10 +191,10 @@ export function ChatInterface() {
           {messages.length === 0 ? (
             <div className="mx-auto mt-16 max-w-xl text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Sparkles size={26} />
+                <BookOpen size={26} />
               </div>
-              <h2 className="text-lg font-semibold">向知识库提问</h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <h2 className="font-serif text-xl font-semibold tracking-tight">向知识库提问</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 系统会基于已上传文档检索相关内容，并由 DeepSeek 生成带引用的回答。
               </p>
               <div className="mt-6 grid gap-2 sm:grid-cols-2">
@@ -202,7 +202,7 @@ export function ChatInterface() {
                   <button
                     key={example}
                     onClick={() => void send(example)}
-                    className="rounded-lg border border-border bg-card p-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                    className="rounded-lg border border-border bg-card p-3 text-left text-sm text-muted-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground hover:shadow-md"
                   >
                     {example}
                   </button>

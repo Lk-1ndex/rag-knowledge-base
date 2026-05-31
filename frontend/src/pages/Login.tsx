@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles } from "lucide-react";
+import { BookOpen, Loader2 } from "lucide-react";
 import { login } from "../lib/api";
 import { useAuthStore } from "../stores/authStore";
 import { Button } from "../components/ui/button";
@@ -33,14 +33,14 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-sm p-8 shadow-md">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Sparkles size={24} />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-sm animate-slide-up p-8 shadow-md">
+        <div className="mb-7 flex flex-col items-center text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+            <BookOpen size={26} />
           </div>
-          <h1 className="text-xl font-semibold">研究组知识库</h1>
-          <p className="mt-1 text-sm text-muted-foreground">组内文献检索与 RAG 问答系统</p>
+          <h1 className="font-serif text-2xl font-semibold tracking-tight">研究组知识库</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">组内文献检索与 RAG 问答系统</p>
         </div>
         <form className="space-y-3" onSubmit={(event) => void submit(event)}>
           <Input name="username" placeholder="用户名" autoComplete="username" required />

@@ -27,7 +27,7 @@ export function Header({ user }: { user: User | null }) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-      <div className="text-sm font-medium text-muted-foreground">私有化 RAG 知识库</div>
+      <div className="font-serif text-sm font-medium text-muted-foreground">私有化 RAG 知识库</div>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 text-sm transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
