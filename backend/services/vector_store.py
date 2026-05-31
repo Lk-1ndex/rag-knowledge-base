@@ -1,5 +1,13 @@
+import uuid
+
 from config import settings
 from services.document_processor import Chunk
+
+_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+
+
+def _point_id(document_id: str, chunk_index: int) -> str:
+    return str(uuid.uuid5(_NAMESPACE, f"{document_id}:{chunk_index}"))
 
 
 class VectorStore:
@@ -44,7 +52,7 @@ class VectorStore:
         for chunk, vector in zip(chunks, vectors, strict=True):
             points.append(
                 qm.PointStruct(
-                    id=f"{document_id}:{chunk.chunk_index}",
+                    id=_point_id(document_id, chunk.chunk_index),
                     vector=vector,
                     payload={
                         "document_id": document_id,

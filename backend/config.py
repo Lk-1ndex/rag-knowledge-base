@@ -1,8 +1,11 @@
 from functools import lru_cache
+import os
 from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+os.environ.setdefault("NO_PROXY", "localhost,127.0.0.1")
 
 
 class Settings(BaseSettings):
@@ -14,7 +17,11 @@ class Settings(BaseSettings):
       原因：DeepSeek 官方不提供 embedding 接口，向量化由本地模型负责。
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=str(Path(__file__).resolve().parent.parent / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # ===== LLM：DeepSeek 官方（默认）=====
     deepseek_api_key: str = Field("", alias="DEEPSEEK_API_KEY")
