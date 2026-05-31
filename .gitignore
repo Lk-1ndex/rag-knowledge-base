@@ -1,0 +1,11 @@
+.env
+data/
+backups/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pydeps/
+htmlcov/
+node_modules/
+dist/
+.DS_Store

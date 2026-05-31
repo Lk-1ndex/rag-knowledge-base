@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0f1117;
+  color: #eef2ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.input {
+  @apply rounded-md border border-line bg-bg px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand;
+}
+
+.button {
+  @apply inline-flex items-center justify-center rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.ghost-button {
+  @apply inline-flex items-center justify-center rounded-md border border-line px-3 py-2 text-sm text-slate-200 hover:bg-slate-800;
+}
+
+.panel {
+  @apply rounded-lg border border-line bg-panel;
+}
