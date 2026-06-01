@@ -7,6 +7,20 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from config import settings
+from services.api_key_service import decode_access_token
+
+
+def _identity(request: Request) -> str:
+    """优先按用户身份限流，未登录走 IP 兜底（防爆破）。"""
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        return f"k:{api_key[:12]}"
+    token = request.cookies.get("access_token")
+    if token:
+        user_id = decode_access_token(token)
+        if user_id:
+            return f"u:{user_id}"
+    return f"ip:{request.client.host if request.client else 'unknown'}"
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -19,7 +33,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         if request.url.path == "/health":
             return await call_next(request)
-        identity = request.headers.get("X-API-Key", request.client.host if request.client else "unknown")
+        identity = _identity(request)
         try:
             allowed, retry_after = await check_rate(self.redis, f"rl:{identity}", settings.rate_limit_per_minute)
         except Exception:
