@@ -6,18 +6,37 @@ import { DocumentUploader } from "../components/library/DocumentUploader";
 import { api, type DocumentItem } from "../lib/api";
 import { useAuthStore } from "../stores/authStore";
 import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
+
+const categories = ["全部", "精读文献", "组内发表论文", "组会笔记", "技术文档", "其他"];
 
 export default function Library() {
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("全部");
+  const [uploader, setUploader] = useState("全部");
   const user = useAuthStore((state) => state.user);
+
   const docs = useQuery({
-    queryKey: ["documents", search],
+    queryKey: ["documents", search, category, uploader],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      if (category !== "全部") params.category = category;
+      if (uploader !== "全部") params.uploader = uploader;
+      const { data } = await api.get<{ items: DocumentItem[]; total: number }>("/api/documents", { params });
+      return data.items;
+    }
+  });
+
+  const uploaders = useQuery({
+    queryKey: ["document-uploaders"],
     queryFn: async () => {
       const { data } = await api.get<{ items: DocumentItem[]; total: number }>("/api/documents", {
-        params: { search }
+        params: { limit: 200 }
       });
-      return data.items;
+      const names = [...new Set(data.items.map((d) => d.uploader_name).filter(Boolean))];
+      return names.sort();
     }
   });
 
@@ -41,6 +60,30 @@ export default function Library() {
             />
           </div>
           <DocumentUploader onUploaded={() => void docs.refetch()} />
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="按分类筛选" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={uploader} onValueChange={setUploader}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="按上传者筛选" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="全部">全部</SelectItem>
+              {(uploaders.data ?? []).map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {docs.isLoading ? (

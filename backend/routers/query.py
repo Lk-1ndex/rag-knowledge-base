@@ -7,8 +7,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from middleware.auth_middleware import get_current_user
+from middleware.auth_middleware import require_group
 from models.conversation import Conversation
+from models.group import Group
 from models.message import Message
 from models.user import User
 from schemas.query import QueryRequest, QueryResponse
@@ -53,11 +54,13 @@ async def save_turn(db: AsyncSession, conversation: Conversation, question: str,
 async def query(
     payload: QueryRequest,
     request: Request,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_group),
     db: AsyncSession = Depends(get_db),
 ):
+    group = await db.get(Group, user.group_id)
+    top_k = payload.top_k or group.default_top_k
     conversation = await ensure_conversation(db, user, payload.question, payload.conversation_id)
-    result = await RagChain().answer(db, payload.question, payload.top_k, payload.categories, conversation.id)
+    result = await RagChain().answer(db, payload.question, top_k, group, payload.categories, conversation.id)
     await save_turn(db, conversation, payload.question, result["answer"], result["sources"])
     await write_audit_log(db, user, "query", payload.question[:200], request)
     return QueryResponse(
@@ -72,15 +75,17 @@ async def query(
 async def query_stream(
     payload: QueryRequest,
     request: Request,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_group),
     db: AsyncSession = Depends(get_db),
 ):
+    group = await db.get(Group, user.group_id)
+    top_k = payload.top_k or group.default_top_k
     conversation = await ensure_conversation(db, user, payload.question, payload.conversation_id)
 
     async def event_generator():
         answer_parts: list[str] = []
         sources: list[dict] = []
-        async for event in RagChain().stream_answer(db, payload.question, payload.top_k, payload.categories, conversation.id):
+        async for event in RagChain().stream_answer(db, payload.question, top_k, group, payload.categories, conversation.id):
             if event["type"] == "delta":
                 answer_parts.append(event["content"])
             if event["type"] == "sources":

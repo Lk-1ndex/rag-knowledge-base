@@ -22,26 +22,29 @@ export function Header({ user }: { user: User | null }) {
     navigate("/login");
   }
 
-  const roleLabel = user?.role === "admin" ? "管理员" : "组员";
-  const initial = user?.username?.[0]?.toUpperCase() ?? "?";
+  const groupRoleLabel = user?.group_role === "admin" ? "组长" : user?.group_role === "member" ? "组员" : "未加组";
+  const displayName = user?.display_name || user?.username || "";
+  const initial = displayName[0]?.toUpperCase() ?? "?";
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-      <div className="font-serif text-sm font-medium text-muted-foreground">私有化 RAG 知识库</div>
+      <div className="font-serif text-sm font-medium text-muted-foreground">
+        {user?.group ? user.group.name : "私有化 RAG 知识库"}
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 text-sm transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
             {initial}
           </span>
           <span className="hidden text-left leading-tight sm:block">
-            <span className="block font-medium text-foreground">{user?.username}</span>
-            <span className="block text-xs text-muted-foreground">{roleLabel}</span>
+            <span className="block font-medium text-foreground">{displayName}</span>
+            <span className="block text-xs text-muted-foreground">{groupRoleLabel}</span>
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel className="flex items-center gap-2">
             <UserIcon size={14} />
-            {user?.username} · {roleLabel}
+            {displayName} · {groupRoleLabel}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => void handleLogout()}>

@@ -16,6 +16,7 @@ class Document(Base):
     file_type: Mapped[str] = mapped_column(String(16))
     category: Mapped[str] = mapped_column(String(64), default="其他")
     uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), index=True)
     upload_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     status: Mapped[str] = mapped_column(String(20), default="processing")
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -24,4 +25,5 @@ class Document(Base):
     file_size: Mapped[int] = mapped_column(Integer, default=0)
     error_message: Mapped[str] = mapped_column(Text, default="")
 
-    uploader = relationship("User", back_populates="documents")
+    uploader = relationship("User", back_populates="documents", foreign_keys=[uploaded_by])
+    group = relationship("Group", back_populates="documents")

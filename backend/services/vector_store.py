@@ -43,6 +43,7 @@ class VectorStore:
         document_id: str,
         document_title: str,
         category: str,
+        group_id: int,
         chunks: list[Chunk],
         vectors: list[list[float]],
     ) -> None:
@@ -58,6 +59,7 @@ class VectorStore:
                         "document_id": document_id,
                         "document_title": document_title,
                         "category": category,
+                        "group_id": group_id,
                         "chunk_index": chunk.chunk_index,
                         "chunk_text": chunk.text,
                         "page_number": chunk.page_number,
@@ -67,14 +69,19 @@ class VectorStore:
         if points:
             await self.client.upsert(collection_name=self.collection, points=points)
 
-    async def search(self, query_vector: list[float], top_k: int, categories: list[str] | None = None) -> list[dict]:
+    async def search(
+        self,
+        query_vector: list[float],
+        top_k: int,
+        group_id: int,
+        categories: list[str] | None = None,
+    ) -> list[dict]:
         from qdrant_client.http import models as qm
 
-        query_filter = None
+        must = [qm.FieldCondition(key="group_id", match=qm.MatchValue(value=group_id))]
         if categories:
-            query_filter = qm.Filter(
-                must=[qm.FieldCondition(key="category", match=qm.MatchAny(any=categories))]
-            )
+            must.append(qm.FieldCondition(key="category", match=qm.MatchAny(any=categories)))
+        query_filter = qm.Filter(must=must)
         hits = await self.client.search(
             collection_name=self.collection,
             query_vector=query_vector,
@@ -97,5 +104,15 @@ class VectorStore:
             collection_name=self.collection,
             points_selector=qm.FilterSelector(
                 filter=qm.Filter(must=[qm.FieldCondition(key="document_id", match=qm.MatchValue(value=document_id))])
+            ),
+        )
+
+    async def delete_group(self, group_id: int) -> None:
+        from qdrant_client.http import models as qm
+
+        await self.client.delete(
+            collection_name=self.collection,
+            points_selector=qm.FilterSelector(
+                filter=qm.Filter(must=[qm.FieldCondition(key="group_id", match=qm.MatchValue(value=group_id))])
             ),
         )

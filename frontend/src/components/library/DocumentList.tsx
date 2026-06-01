@@ -51,6 +51,7 @@ export function DocumentList({
             <TableHead>状态</TableHead>
             <TableHead className="text-right">Chunk</TableHead>
             <TableHead>大小</TableHead>
+            <TableHead>上传者</TableHead>
             <TableHead>上传时间</TableHead>
             <TableHead className="w-12" />
           </TableRow>
@@ -75,9 +76,10 @@ export function DocumentList({
               </TableCell>
               <TableCell className="text-right font-mono text-muted-foreground">{doc.chunk_count}</TableCell>
               <TableCell className="text-muted-foreground">{formatFileSize(doc.file_size)}</TableCell>
+              <TableCell className="text-muted-foreground">{doc.uploader_name || "-"}</TableCell>
               <TableCell className="text-muted-foreground">{formatTime(doc.upload_time)}</TableCell>
               <TableCell>
-                {user?.role === "admin" || user?.id === doc.uploaded_by ? (
+                {user?.group_role === "admin" || user?.id === doc.uploaded_by ? (
                   <Button
                     variant="ghost"
                     size="icon"

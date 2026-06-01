@@ -10,6 +10,7 @@ class DocumentOut(BaseModel):
     file_type: str
     category: str
     uploaded_by: int
+    uploader_name: str = ""
     upload_time: datetime
     status: str
     chunk_count: int

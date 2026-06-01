@@ -7,9 +7,8 @@ from redis.asyncio import Redis
 from config import settings
 from database import AsyncSessionLocal, init_db
 from middleware.rate_limiter import RateLimitMiddleware
-from routers import admin, api_keys, auth, conversations, documents, query
+from routers import api_keys, auth, conversations, documents, groups, query
 from services.api_key_service import ensure_admin_user
-from services.system_config import ensure_default_configs
 from services.vector_store import VectorStore
 
 
@@ -19,7 +18,6 @@ async def lifespan(app: FastAPI):
     await init_db()
     async with AsyncSessionLocal() as db:
         await ensure_admin_user(db)
-        await ensure_default_configs(db)
     try:
         await VectorStore().ensure_collection()
     except Exception:
@@ -56,7 +54,7 @@ app.include_router(api_keys.router)
 app.include_router(documents.router)
 app.include_router(query.router)
 app.include_router(conversations.router)
-app.include_router(admin.router)
+app.include_router(groups.router)
 
 
 @app.get("/health")

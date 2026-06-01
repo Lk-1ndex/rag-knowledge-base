@@ -27,7 +27,7 @@ async def process_document(ctx: dict, document_id: str) -> None:
             pages = extract_text_pages(Path(doc.stored_path), doc.file_type)
             chunks = chunk_pages(pages)
             vectors = await Embedder().embed_texts([chunk.text for chunk in chunks])
-            await VectorStore().upsert_chunks(doc.id, doc.title, doc.category, chunks, vectors)
+            await VectorStore().upsert_chunks(doc.id, doc.title, doc.category, doc.group_id, chunks, vectors)
             doc.chunk_count = len(chunks)
             doc.status = "ready"
             doc.error_message = ""

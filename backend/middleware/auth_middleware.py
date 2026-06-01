@@ -25,7 +25,13 @@ async def get_current_user(
     return user
 
 
-async def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+async def require_group(user: User = Depends(get_current_user)) -> User:
+    if user.group_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="请先加入或创建小组")
+    return user
+
+
+async def require_group_admin(user: User = Depends(require_group)) -> User:
+    if user.group_role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要小组管理员权限")
     return user

@@ -7,9 +7,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
+from models.group import Group
 from models.message import Message
 from services.retriever import Retriever
-from services.system_config import get_config_value
+
+
+DEFAULT_SYSTEM_PROMPT = """你是一个学术研究助手，服务于一个通信与信息系统研究组。
+请基于以下从知识库中检索到的内容来回答问题。
+如果检索到的内容不足以完整回答问题，请如实说明，不要编造内容。
+回答应当准确、专业，中英文均可，引用信息时请注明来源文献标题。
+
+检索到的相关内容：
+{context}
+"""
 
 
 class RagChain:
@@ -22,11 +32,12 @@ class RagChain:
         db: AsyncSession,
         question: str,
         top_k: int,
+        group: Group,
         categories: list[str] | None,
         conversation_id: str | None,
     ) -> dict:
-        sources = await self.retriever.retrieve(question, top_k, categories)
-        messages = await self._build_messages(db, question, sources, conversation_id)
+        sources = await self.retriever.retrieve(question, top_k, group.id, categories)
+        messages = await self._build_messages(db, question, sources, group, conversation_id)
         if settings.openai_wire_api == "responses":
             return await self._answer_with_responses_api(messages, sources)
         kwargs = self._chat_kwargs(messages)
@@ -48,11 +59,12 @@ class RagChain:
         db: AsyncSession,
         question: str,
         top_k: int,
+        group: Group,
         categories: list[str] | None,
         conversation_id: str | None,
     ) -> AsyncGenerator[dict, None]:
-        sources = await self.retriever.retrieve(question, top_k, categories)
-        messages = await self._build_messages(db, question, sources, conversation_id)
+        sources = await self.retriever.retrieve(question, top_k, group.id, categories)
+        messages = await self._build_messages(db, question, sources, group, conversation_id)
         if settings.openai_wire_api == "responses":
             result = await self._answer_with_responses_api(messages, sources)
             for piece in chunk_for_sse(result["answer"]):
@@ -83,9 +95,10 @@ class RagChain:
         db: AsyncSession,
         question: str,
         sources: list[dict],
+        group: Group,
         conversation_id: str | None,
     ) -> list[dict]:
-        prompt_template = await get_config_value(db, "system_prompt")
+        prompt_template = group.system_prompt or DEFAULT_SYSTEM_PROMPT
         context = "\n\n".join(
             f"[{idx + 1}] {source.get('document_title')} / {source.get('category')}\n{source.get('chunk_text')}"
             for idx, source in enumerate(sources)

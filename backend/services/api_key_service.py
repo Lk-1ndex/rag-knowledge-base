@@ -25,7 +25,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def create_access_token(user: User) -> str:
     expires_at = datetime.utcnow() + timedelta(days=settings.jwt_expire_days)
-    payload = {"sub": str(user.id), "username": user.username, "role": user.role, "exp": expires_at}
+    payload = {"sub": str(user.id), "username": user.username, "exp": expires_at}
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 
@@ -78,14 +78,15 @@ async def verify_api_key(db: AsyncSession, raw_key: str) -> User | None:
 
 
 async def ensure_admin_user(db: AsyncSession) -> None:
+    """启动时确保 .env 里指定的引导账号存在。无组、无任何特殊权限，纯为方便首次登录。"""
     stmt = select(User).where(User.username == settings.admin_username)
     existing = (await db.execute(stmt)).scalar_one_or_none()
     if existing:
         return
     user = User(
         username=settings.admin_username,
+        display_name=settings.admin_username,
         hashed_password=hash_password(settings.admin_password),
-        role="admin",
         is_active=True,
     )
     db.add(user)

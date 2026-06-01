@@ -8,12 +8,29 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1)
 
 
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=64, pattern=r"^[A-Za-z0-9_]+$")
+    display_name: str = Field(min_length=1, max_length=64)
+    password: str = Field(min_length=8)
+
+
+class GroupBrief(BaseModel):
+    id: int
+    name: str
+    description: str = ""
+
+    model_config = {"from_attributes": True}
+
+
 class UserOut(BaseModel):
     id: int
     username: str
-    role: str
+    display_name: str = ""
     is_active: bool
     created_at: datetime
+    group_id: int | None = None
+    group_role: str | None = None
+    group: GroupBrief | None = None
 
     model_config = {"from_attributes": True}
 

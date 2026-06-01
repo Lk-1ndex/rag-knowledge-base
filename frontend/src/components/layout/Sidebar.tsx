@@ -1,4 +1,4 @@
-import { BookOpen, KeyRound, Library, MessageSquare, ShieldCheck } from "lucide-react";
+import { BookOpen, KeyRound, Library, MessageSquare, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { User } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -6,6 +6,7 @@ import { cn } from "../../lib/utils";
 const navItems = [
   { to: "/", label: "问答", icon: MessageSquare, end: true },
   { to: "/library", label: "知识库", icon: Library, end: false },
+  { to: "/group", label: "小组", icon: Users, end: false },
   { to: "/api-keys", label: "API Key", icon: KeyRound, end: false }
 ];
 
@@ -18,7 +19,7 @@ export function Sidebar({ user }: { user: User | null }) {
         </div>
         <div className="leading-tight">
           <div className="font-serif text-base font-semibold tracking-tight">研究组知识库</div>
-          <div className="text-xs text-muted-foreground">Research RAG KB</div>
+          <div className="text-xs text-muted-foreground">{user?.group?.name ?? "Research RAG KB"}</div>
         </div>
       </div>
 
@@ -41,22 +42,6 @@ export function Sidebar({ user }: { user: User | null }) {
             {label}
           </NavLink>
         ))}
-        {user?.role === "admin" ? (
-          <NavLink
-            to="/admin"
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )
-            }
-          >
-            <ShieldCheck size={18} />
-            管理员
-          </NavLink>
-        ) : null}
       </nav>
 
       <div className="border-t border-border p-4">

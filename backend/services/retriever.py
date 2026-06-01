@@ -7,9 +7,9 @@ class Retriever:
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
 
-    async def retrieve(self, question: str, top_k: int, categories: list[str] | None = None) -> list[dict]:
+    async def retrieve(self, question: str, top_k: int, group_id: int, categories: list[str] | None = None) -> list[dict]:
         vector = await self.embedder.embed_query(question)
-        hits = await self.vector_store.search(vector, top_k, categories)
+        hits = await self.vector_store.search(vector, top_k, group_id, categories)
         return merge_adjacent_chunks(hits)
 
 
