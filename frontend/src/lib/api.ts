@@ -133,6 +133,11 @@ export async function logout(): Promise<void> {
   await api.post("/api/auth/logout");
 }
 
+export async function updateMe(display_name: string): Promise<User> {
+  const { data } = await api.patch<User>("/api/auth/me", { display_name });
+  return data;
+}
+
 export async function getMyGroup(): Promise<Group> {
   const { data } = await api.get<Group>("/api/groups/me");
   return data;

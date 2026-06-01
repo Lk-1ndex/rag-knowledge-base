@@ -14,6 +14,10 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8)
 
 
+class UpdateMeRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=64)
+
+
 class GroupBrief(BaseModel):
     id: int
     name: str

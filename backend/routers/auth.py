@@ -12,7 +12,7 @@ from database import get_db
 from middleware.auth_middleware import get_current_user
 from middleware.rate_limiter import ensure_not_banned, record_auth_failure
 from models.user import User
-from schemas.auth import LoginRequest, LoginResponse, RegisterRequest, UserOut
+from schemas.auth import LoginRequest, LoginResponse, RegisterRequest, UpdateMeRequest, UserOut
 from services.api_key_service import create_access_token, hash_password, verify_password
 from services.audit import client_ip, write_audit_log
 
@@ -84,5 +84,30 @@ async def logout(response: Response):
 
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    fresh = await _load_user_with_group(db, user.id)
+    return UserOut.model_validate(fresh)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(
+    payload: UpdateMeRequest,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    new_name = payload.display_name.strip()
+    if new_name != user.display_name:
+        clash = (
+            await db.execute(select(User).where(User.display_name == new_name, User.id != user.id))
+        ).scalar_one_or_none()
+        if clash:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="昵称已被使用，请换一个")
+        user.display_name = new_name
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="昵称已被使用，请换一个")
+        await write_audit_log(db, user, "user.update", f"修改昵称为 {new_name}", request)
     fresh = await _load_user_with_group(db, user.id)
     return UserOut.model_validate(fresh)
