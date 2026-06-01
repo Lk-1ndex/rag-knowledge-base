@@ -15,6 +15,19 @@ export function formatTime(value: string | null) {
   return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(normalized));
 }
 
+export function formatTimeShort(value: string | null) {
+  if (!value) return "—";
+  const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value);
+  const normalized = value.includes("T") && !hasTimezone ? `${value}Z` : value;
+  const d = new Date(normalized);
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  const fmt = new Intl.DateTimeFormat("zh-CN", sameYear
+    ? { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }
+    : { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  return fmt.format(d);
+}
+
 export function formatFileSize(bytes: number) {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
