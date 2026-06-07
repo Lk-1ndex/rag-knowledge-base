@@ -12,7 +12,7 @@ from sqlalchemy import select
 from config import settings
 from database import AsyncSessionLocal
 from models.document import Document
-from services.document_processor import chunk_pages, extract_text_pages
+from services.document_processor import chunk_blocks, extract_blocks
 from services.embedder import Embedder
 from services.vector_store import VectorStore
 
@@ -24,8 +24,8 @@ async def process_document(ctx: dict, document_id: str) -> None:
         if doc is None:
             return
         try:
-            pages = extract_text_pages(Path(doc.stored_path), doc.file_type)
-            chunks = chunk_pages(pages)
+            blocks = extract_blocks(Path(doc.stored_path), doc.file_type)
+            chunks = chunk_blocks(blocks)
             vectors = await Embedder().embed_texts([chunk.text for chunk in chunks])
             await VectorStore().upsert_chunks(doc.id, doc.title, doc.category, doc.group_id, chunks, vectors)
             doc.chunk_count = len(chunks)
